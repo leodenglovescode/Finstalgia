@@ -23,7 +23,7 @@ Configuration can be loaded automatically from `./.env` or an explicit `--env-fi
 
 | Target | Current evidence |
 | --- | --- |
-| Python 3.10+ | Declared minimum; host tests performed on 3.11 |
+| Python 3.10+ | Tests passed on 3.10/3.12 in CI and 3.11 on the host |
 | Jellyfin 10.11 | Published API checked; both browse-route families mocked |
 | iPad 2 A1395, iOS 9.3.5 Safari | Primary target; playback confirmed by the project owner |
 | Modern Safari | Native HLS player; same playback path |

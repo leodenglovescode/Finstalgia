@@ -98,7 +98,7 @@ Use [the device checklist](DEVICE_CHECKLIST.md) to validate iPad 2/iOS 9.3.5, ce
 
 No App Store, jailbreak or native application. Legacy Safari has rendering/runtime/native control limitations; cookies and seeking may differ. Old hardware has 512 MiB RAM and limited codec support; lists are paginated and posters kept small. HTTPS requires CA installation, correct time, SAN, expiry and compatible TLS. HTTP credentials are plaintext on the LAN. Input media can demand heavy CPU/GPU transcoding; output depends on Jellyfin and ffmpeg. DRM/streaming-provider content is unsupported. Some subtitle types need upstream burn-in; v0.2 does not expose subtitle choice. Continue watching, resume, progress reporting and manual watched marks sync with Jellyfin. Audio-only libraries, live TV, subtitle/audio selection, offline caching and native apps are outside the current feature set.
 
-Source is available under the [MIT license](../LICENSE). Public images are available at `ghcr.io/leodenglovescode/finstalgia:latest` and `:0.2.0`.
+Source is available under the [MIT license](../LICENSE). Public images are available at `leodengdev/finstalgia:latest` and `:0.2.0`.
 
 ## Preview assets
 

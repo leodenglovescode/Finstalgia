@@ -2,6 +2,8 @@ include .env.example .dockerignore Dockerfile compose.yaml compose.build.yaml
 include README.md LICENSE CONTRIBUTING.md SECURITY.md requirements-dev.lock
 recursive-include deploy *.service *.example
 recursive-include docs *.md *.html *.png *.svg
+recursive-include tests *.py *.cjs
+recursive-include tools *.py
 global-exclude .env *.key *.pem *.cer *.p12 *.pfx *.pyc
 prune .venv
 prune build
