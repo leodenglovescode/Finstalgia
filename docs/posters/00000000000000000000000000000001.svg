@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+width="240" height="360" viewBox="0 0 240 360">
+<rect width="240" height="360" fill="#333451"/>
+<circle cx="70" cy="100" r="69" fill="none" stroke="#cab4ed" stroke-width="1.4"/>
+<circle cx="170" cy="120" r="46" fill="#cab4ed" opacity=".25"/>
+<path d="M0 220 L240 120 L240 240 L0 290Z" fill="#cab4ed" opacity=".12"/>
+<path d="M22 22 H218 V338 H22Z" fill="none" stroke="#cab4ed" opacity=".35"/>
+<text x="120" y="42" text-anchor="middle" fill="#cab4ed"
+font-family="Arial,sans-serif" font-size="8" letter-spacing="3">A FICTIONAL FILM</text>
+<text x="120" y="280" text-anchor="middle" fill="#cab4ed"
+font-family="Georgia,serif" font-size="21">The</text>
+<text x="120" y="307" text-anchor="middle" fill="#cab4ed"
+font-family="Georgia,serif" font-size="21">Quiet Orbit</text>
+<text x="120" y="330" text-anchor="middle" fill="#cab4ed"
+font-family="Arial,sans-serif" font-size="7" letter-spacing="2">
+FINSTALGIA DESIGN PREVIEW</text></svg>

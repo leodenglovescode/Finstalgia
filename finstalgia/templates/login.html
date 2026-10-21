@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="login-layout">
+  <section class="login-panel">
+    <h1>Sign in</h1>
+    <p class="quiet">Use your Jellyfin account.</p>
+    {% if not secure %}<div class="notice warning" role="alert"><strong>HTTP connection · unencrypted</strong><br>Your password and session are sent in plaintext. Use HTTPS on untrusted networks.</div>{% endif %}
+    {% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+    <form action="/login" method="post">
+      <input type="hidden" name="csrf" value="{{ session.csrf }}">
+      <label for="username">Jellyfin username</label>
+      <input id="username" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" maxlength="256" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" maxlength="4096" required>
+      <button class="button primary full" type="submit">Sign in</button>
+    </form>
+    <div class="certificate-help"><a href="/ca.cer">Download root CA certificate</a><p class="small quiet">Verify its fingerprint with the operator before installing. A root CA grants broad trust.</p></div>
+  </section>
+</div>
+{% endblock %}

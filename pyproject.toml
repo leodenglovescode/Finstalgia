@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=77,<83"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finstalgia"
+version = "0.1.0"
+description = "An app-free Jellyfin client and legacy iPad HLS bridge"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "httpx>=0.28,<0.29",
+  "jinja2>=3.1.6,<4", "cryptography>=45,<49", "python-dotenv>=1.1,<2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.12,<1"]
+
+[project.scripts]
+finstalgia = "finstalgia.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["finstalgia*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+finstalgia = ["templates/*.html", "static/*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

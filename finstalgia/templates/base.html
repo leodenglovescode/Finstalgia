@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{{ title }} · Finstalgia</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+</head>
+<body class="{{ mode }}">
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="masthead">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="Finstalgia home"><img class="brand-logo" src="/static/logo.svg" width="36" height="36" alt=""> finstalgia<span class="brand-dot"> / </span></a>
+      <nav class="topnav" aria-label="Main navigation">
+        {% if session and session.token %}<a href="/">Libraries</a><a href="/search">Search</a>{% endif %}
+      </nav>
+      <div class="account">
+        {% if session %}
+        <form action="/mode" method="post" class="inline mode-switch">
+          <input type="hidden" name="csrf" value="{{ session.csrf }}">
+          <input type="hidden" name="return" value="{{ request.url.path }}">
+          <button name="mode" value="{{ 'modern' if mode == 'retro' else 'retro' }}" title="Change appearance">{{ '◈ Modern' if mode == 'retro' else '▤ Retro' }} mode</button>
+        </form>
+        {% if session.token %}<form action="/logout" method="post" class="inline"><input type="hidden" name="csrf" value="{{ session.csrf }}"><button class="signout">Sign out</button></form>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  <main id="content" class="wrap">
+    {% if crumbs %}<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Libraries</a>{% for label, href in crumbs %}<span aria-hidden="true"> / </span>{% if href %}<a href="{{ href }}">{{ label }}</a>{% else %}<span>{{ label }}</span>{% endif %}{% endfor %}</nav>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer"><span class="quiet">Finstalgia · v0.1</span></footer>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-heading"><h1>{{ title }}</h1>{% if description %}<p class="lede">{{ description|truncate(280) }}</p>{% endif %}</section>
+{% if q is defined %}<form class="search-form" action="/search" method="get"><label class="sr-only" for="q">Search your library</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Films, series, episodes…" maxlength="120"><button class="button primary">Search</button></form>{% endif %}
+<div class="section-line"><span class="quiet small">{{ total }} {{ 'result' if total == 1 else 'results' }} · Page {{ page + 1 }}</span></div>
+{% if items %}
+<div class="poster-grid">
+{% for item in items %}
+  <article class="card">
+    <a href="/item/{{ item.Id }}" class="card-link">
+      <div class="poster">{% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}" alt="" width="240" height="360">{% else %}<div class="poster-fallback"><span class="fallback-icon" aria-hidden="true">{{ '▤' if item.Type in ['Series', 'Season', 'CollectionFolder'] else '▷' }}</span><span>{{ item.Name }}</span></div>{% endif %}<span class="poster-type">{{ item.Type }}</span></div>
+      <h3>{% if item.Type == 'Episode' and item.IndexNumber is defined %}<span class="quiet">E{{ item.IndexNumber }} · </span>{% endif %}{{ item.Name }}</h3>
+      <p class="card-meta">{{ item.ProductionYear or ('Your library' if item.Type == 'CollectionFolder' else item.Type) }}{% if item.RunTimeTicks %} <span>·</span> {{ (item.RunTimeTicks / 600000000)|int }} min{% endif %}</p>
+    </a>
+  </article>
+{% endfor %}
+</div>
+{% else %}<div class="empty"><h2>No items found</h2><p class="quiet">{% if q is defined %}Try a different search.{% else %}Check this account's library access in Jellyfin.{% endif %}</p><a class="button" href="/">Libraries</a></div>{% endif %}
+<nav class="pagination" aria-label="Pagination">{% if page > 0 %}<a class="button" href="{{ page_url }}page={{ page - 1 }}">← Previous</a>{% endif %}<span class="quiet">Page {{ page + 1 }}</span>{% if (page + 1) * size < total %}<a class="button" href="{{ page_url }}page={{ page + 1 }}">Next →</a>{% endif %}</nav>
+{% endblock %}

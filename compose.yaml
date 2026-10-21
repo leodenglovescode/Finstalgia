@@ -1,0 +1,31 @@
+services:
+  finstalgia:
+    build: .
+    image: finstalgia:local
+    restart: unless-stopped
+    init: true
+    environment:
+      FINSTALGIA_JELLYFIN_URL: ${FINSTALGIA_JELLYFIN_URL:-http://host.docker.internal:8096}
+      FINSTALGIA_SCHEME: ${FINSTALGIA_SCHEME:-http}
+      FINSTALGIA_CONFIG_DIR: /config
+      FINSTALGIA_IDLE_SECONDS: ${FINSTALGIA_IDLE_SECONDS:-1800}
+      FINSTALGIA_MAX_SECONDS: ${FINSTALGIA_MAX_SECONDS:-14400}
+      FINSTALGIA_UPSTREAM_CA: ${FINSTALGIA_UPSTREAM_CA:-}
+      WEB_CONCURRENCY: "1"
+    ports:
+      - "${FINSTALGIA_BIND_IP:-127.0.0.1}:${FINSTALGIA_PORT:-18095}:18095"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - certificates:/config
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 20s
+
+volumes:
+  certificates:

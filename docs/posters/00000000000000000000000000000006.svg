@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+width="240" height="360" viewBox="0 0 240 360">
+<rect width="240" height="360" fill="#493a33"/>
+<circle cx="160" cy="122" r="69" fill="none" stroke="#e7cbb2" stroke-width="1.4"/>
+<circle cx="80" cy="142" r="46" fill="#e7cbb2" opacity=".25"/>
+<path d="M0 220 L240 145 L240 240 L0 290Z" fill="#e7cbb2" opacity=".12"/>
+<path d="M22 22 H218 V338 H22Z" fill="none" stroke="#e7cbb2" opacity=".35"/>
+<text x="120" y="42" text-anchor="middle" fill="#e7cbb2"
+font-family="Arial,sans-serif" font-size="8" letter-spacing="3">A FICTIONAL FILM</text>
+<text x="120" y="280" text-anchor="middle" fill="#e7cbb2"
+font-family="Georgia,serif" font-size="21">The</text>
+<text x="120" y="307" text-anchor="middle" fill="#e7cbb2"
+font-family="Georgia,serif" font-size="21">Long Weekend</text>
+<text x="120" y="330" text-anchor="middle" fill="#e7cbb2"
+font-family="Arial,sans-serif" font-size="7" letter-spacing="2">
+FINSTALGIA DESIGN PREVIEW</text></svg>

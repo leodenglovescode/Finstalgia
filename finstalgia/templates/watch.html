@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="player-heading"><h1>{{ title }}</h1></div>
+<section class="player-shell" aria-label="Video player">
+  <div class="player-chrome"><span>{{ 'FINSTALGIA MEDIA PLAYER' if mode == 'retro' else 'Finstalgia' }}</span><span>{{ grant.quality }}p</span></div>
+  <video controls preload="none" src="{{ media_url }}">Your browser needs native HLS video support. Open this page in Safari.</video>
+  {% if mode == 'retro' %}<div class="player-status">VIDEO · {{ grant.quality }}p</div>{% endif %}
+</section>
+<div class="player-notes"><div><p class="quiet">Tap Play to start. If playback stalls, try 480p.</p></div><a class="button" href="/item/{{ grant.item_id }}">← Details &amp; quality</a></div>
+{% if grant.ticket %}<p class="notice warning">Cookie fallback is active for 15 minutes from player creation. Reload the item and open a new player when it expires. Keep the media URL private.</p>{% endif %}
+{% endblock %}
