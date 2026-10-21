@@ -7,11 +7,11 @@
 A lightweight Jellyfin web client for older iPads. Browse your library and play video through Jellyfin’s H.264/AAC transcoding—no app, jailbreak, or frontend build required.
 
 - **Modern and Retro modes**, with native video controls.
-- Movies, TV, search, and 480p/720p playback.
+- Movies, TV, search, and 480p/720p/1080p playback at up to 30 fps. 720p is the default.
 - Resume playback, continue watching, and watched/unwatched marks synced with Jellyfin.
 - Individual Jellyfin accounts, with access tokens kept on the server.
 
-**v0.2.** Built for iPad 2 / iOS 9.3.5. Playback confirmed working by the project owner.
+**v0.3.** Built for iPad 2 / iOS 9.3.5. Playback confirmed working by the project owner.
 
 ## Screenshots
 
@@ -39,7 +39,7 @@ docker compose run --rm finstalgia cert-init --ip 192.168.1.20
 docker compose up -d
 ```
 
-Replace the example IP with the bridge’s LAN address. Install its public CA on the iPad as described below, then open `https://YOUR_LAN_IP:18443` and sign in. Pin `FINSTALGIA_IMAGE=leodengdev/finstalgia:0.2.0` in `.env` to stay on this release.
+Replace the example IP with the bridge’s LAN address. Install its public CA on the iPad as described below, then open `https://YOUR_LAN_IP:18443` and sign in. Pin `FINSTALGIA_IMAGE=leodengdev/finstalgia:0.3.0` in `.env` to stay on this release.
 
 Prefer Python? [Local install and systemd setup](docs/DEPLOYMENT.md).
 

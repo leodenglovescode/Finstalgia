@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-ARG VERSION=0.2.0
+ARG VERSION=0.3.0
 ARG REVISION=unknown
 LABEL org.opencontainers.image.source="https://github.com/leodenglovescode/Finstalgia" \
       org.opencontainers.image.licenses="MIT" \

@@ -233,12 +233,53 @@ def test_missing_images_and_security_headers(client, upstream):
     assert image.headers["referrer-policy"] == "no-referrer"
 
 
-def test_upstream_connection_failure_is_safe_502(client, upstream):
+def test_upstream_connection_failure_is_safe_502(client, upstream, caplog):
     sign_in(client)
     upstream.network_failure = True
     response = client.get("/")
     assert response.status_code == 502
     assert "must-not-expose" not in response.text
+    assert "Jellyfin request failed: route=/ status=502" in caplog.text
+    assert "must-not-expose" not in caplog.text
+    assert TOKENS["alice"] not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "quality,width,height,level,bitrate",
+    [
+        ("480", 854, 480, 31, 1400000),
+        ("720", 1280, 720, 31, 2500000),
+        ("1080", 1920, 1080, 40, 5000000),
+    ],
+)
+def test_selected_quality_matches_hls_and_playback_profile(
+    client, upstream, quality, width, height, level, bitrate
+):
+    sign_in(client)
+    media = start_play(client, quality=quality)
+    assert client.get(media).status_code == 200
+    master = next(r for r in upstream.requests if r.url.path.endswith("master.m3u8"))
+    assert master.url.params["MaxWidth"] == str(width)
+    assert master.url.params["MaxHeight"] == str(height)
+    assert master.url.params["MaxFramerate"] == "30"
+    assert master.url.params["h264-level"] == str(level)
+    assert master.url.params["VideoBitRate"] == str(bitrate)
+    assert master.url.params["Profile"] == "main"
+    assert master.url.params["Level"] == f"{level // 10}.{level % 10}"
+    import json
+
+    negotiation = next(r for r in upstream.requests if r.url.path.endswith("PlaybackInfo"))
+    profile = json.loads(negotiation.content)["DeviceProfile"]
+    caps = {c["Property"]: c["Value"] for c in profile["CodecProfiles"][0]["Conditions"]}
+    assert caps["Width"] == str(width) and caps["Height"] == str(height)
+    assert caps["VideoLevel"] == str(level) and caps["VideoFramerate"] == "30"
+
+
+def test_default_quality_stays_720p_with_1080_option(client):
+    sign_in(client)
+    detail = client.get("/item/" + MOVIE)
+    assert re.search(r'<select[^>]+id="quality">\s*<option value="720">', detail.text)
+    assert 'value="1080"' in detail.text
 
 
 @pytest.mark.parametrize(

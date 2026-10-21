@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <article class="detail">
-  <div class="detail-poster poster">{% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}" width="240" height="360" alt="{{ item.Name }} poster">{% else %}<div class="poster-fallback"><span class="fallback-icon">▷</span><span>{{ item.Name }}</span></div>{% endif %}</div>
+  <div class="detail-poster poster">{% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}?v=800-95" width="240" height="360" alt="{{ item.Name }} poster">{% else %}<div class="poster-fallback"><span class="fallback-icon">▷</span><span>{{ item.Name }}</span></div>{% endif %}</div>
   <div class="detail-copy"><p class="eyebrow">{{ item.Type }}{% if item.SeriesName %} / {{ item.SeriesName }}{% endif %}</p>
     {% set data = item.UserData or {} %}
     <h1>{{ item.Name }}</h1>
@@ -10,7 +10,7 @@
     {% if item.Genres %}<p class="genres">{% for genre in item.Genres[:6] %}<span>{{ genre }}</span>{% endfor %}</p>{% endif %}
     <form action="/play/{{ item.Id }}" method="post" class="play-form">
       <input type="hidden" name="csrf" value="{{ session.csrf }}">
-      <label for="quality">Playback quality</label><select name="quality" id="quality"><option value="720">720p · Balanced · 2.5 Mbps</option><option value="480">480p · Lighter · 1.4 Mbps</option></select>
+      <label for="quality">Playback quality</label><select name="quality" id="quality"><option value="720">720p30 · Default · 2.5 Mbps</option><option value="480">480p30 · 1.4 Mbps</option><option value="1080">1080p30 · 5 Mbps</option></select>
       {% if data.PlaybackPositionTicks and not data.Played %}<button class="button primary" name="start" value="resume" type="submit">▶ Resume {{ data.PlaybackPositionTicks|playback_time }}</button> <button class="button" name="start" value="over" type="submit">Start over</button>{% else %}<button class="button primary" name="start" value="over" type="submit">▶ Play</button>{% endif %}
       <label class="checkbox"><input type="checkbox" name="ticket" value="yes"> Use a 15-minute media ticket if Safari playback cookies fail</label>
       <p class="small quiet">Jellyfin prepares the stream when you tap Play.</p>

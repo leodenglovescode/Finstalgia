@@ -30,7 +30,7 @@ Replace example IPs with your server addresses. Set up LAN DNS for optional DNS 
 
 ## Docker Compose
 
-Requires Docker Engine/Desktop and the Compose plugin. The supplied Dockerfile uses the official Python slim image, a fixed unprivileged UID/GID (10001), no frontend build or ffmpeg, and a single application process. Compose uses a read-only application filesystem, drops capabilities, prevents privilege escalation, and provides a writable named volume only for certificate state plus temporary storage. Public images are available at `leodengdev/finstalgia` for Linux AMD64 and ARM64. Anonymous pulls need no login. Use `latest` for updates or `0.2.0` to pin the release.
+Requires Docker Engine/Desktop and the Compose plugin. The supplied Dockerfile uses the official Python slim image, a fixed unprivileged UID/GID (10001), no frontend build or ffmpeg, and a single application process. Compose uses a read-only application filesystem, drops capabilities, prevents privilege escalation, and provides a writable named volume only for certificate state plus temporary storage. Public images are available at `leodengdev/finstalgia` for Linux AMD64 and ARM64. Anonymous pulls need no login. Use `latest` for updates or `0.3.0` to pin the release.
 
 No source checkout is needed:
 
@@ -62,6 +62,10 @@ FINSTALGIA_BIND_IP=192.168.1.20
 ```
 
 **Jellyfin addressing matters:** `127.0.0.1` inside the bridge container refers to that container. Use the host's LAN IP or `host.docker.internal` for host-hosted Jellyfin; the Compose host-gateway mapping also supplies that name on Linux. On Linux, Jellyfin must listen on an address reachable from the Docker bridge; a loopback-only listener is not enough. For an existing Jellyfin container, connect Finstalgia to that container's network in a local Compose override and use its service name, such as `http://jellyfin:8096`. Jellyfin need not be bundled or reconfigured by this project. Avoid `network_mode: host` as a default, since it changes isolation and platform behavior.
+
+`host.docker.internal` is a host alias, not the container subnet. Inspect the Compose network with `docker network inspect NETWORK_NAME` to find its subnet and gateway. A host firewall must allow that subnet to reach Jellyfin's host address and TCP port, usually 8096. If Jellyfin disables remote access, include that subnet in its **Dashboard → Networking → LAN networks**, preserving existing entries. A connection timeout suggests routing/firewall filtering; HTTP 503 from an otherwise healthy Jellyfin can indicate its LAN access policy.
+
+Use `docker compose logs -f finstalgia` for upstream failures and rejected/interrupted HLS streams. Logs show route templates and status codes, with no credentials, media tickets, item IDs, or query strings. Routine access logging stays disabled.
 
 Compose reads `.env` for interpolation and passes a specific list of settings into the container. It does not mount or copy `.env`. `FINSTALGIA_CONFIG_DIR` is fixed to `/config` in Compose; `FINSTALGIA_HOST` is replaced by the container's explicit listen address. Settings such as `${VARIABLE}` can be expanded by **Compose itself**, unlike native Finstalgia dotenv parsing. Use simple literal values in both examples. See [Docker's interpolation documentation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/).
 
@@ -95,11 +99,11 @@ Do not add `down --volumes` unless you intend to delete certificate state and ha
 
 ### Updates
 
-Run `docker compose pull` then `docker compose up -d`. Certificates remain in the named volume; login sessions reset. Progress and watched marks remain in Jellyfin. Set `FINSTALGIA_IMAGE=leodengdev/finstalgia:0.2.0` in `.env` to pin a version; use an image digest for a fully fixed deployment. Change it to the previous version and recreate the service to roll back.
+Run `docker compose pull` then `docker compose up -d`. Certificates remain in the named volume; login sessions reset. Progress and watched marks remain in Jellyfin. Set `FINSTALGIA_IMAGE=leodengdev/finstalgia:0.3.0` in `.env` to pin a version; use an image digest for a fully fixed deployment. Change it to the previous version and recreate the service to roll back.
 
 To build your own image from a source checkout, use `docker compose -f compose.yaml -f compose.build.yaml up -d --build`. The override selects the local Dockerfile instead of the registry image.
 
-For maintainers: version tags run tests on Python 3.10/3.12 and build AMD64/ARM64 images. Set the repository variable `DOCKERHUB_USERNAME=leodengdev` and a dedicated read/write `DOCKERHUB_TOKEN` Actions secret to enable automatic publication. Without them the workflow checks the build only. A signed-in maintainer can publish manually with `docker buildx build --platform linux/amd64,linux/arm64 -t leodengdev/finstalgia:0.2.0 -t leodengdev/finstalgia:latest --push .`.
+For maintainers: version tags run tests on Python 3.10/3.12 and build AMD64/ARM64 images. Set the repository variable `DOCKERHUB_USERNAME=leodengdev` and a dedicated read/write `DOCKERHUB_TOKEN` Actions secret to enable automatic publication. Without them the workflow checks the build only. A signed-in maintainer can publish manually with `docker buildx build --platform linux/amd64,linux/arm64 -t leodengdev/finstalgia:0.3.0 -t leodengdev/finstalgia:latest --push .`.
 
 ## Linux systemd
 
@@ -132,7 +136,7 @@ The service uses `EnvironmentFile` with `--no-env-file`: the process environment
 
 ## Reverse proxies
 
-Direct HTTPS in Finstalgia is the documented path for the old iPad. A TLS-terminating reverse proxy is not a turnkey deployment option in v0.2: proxy headers are ignored and CSRF Origin checks assume the browser origin matches the application request host/scheme. Do not solve a mismatch by removing CSRF checks or trusting arbitrary forwarded headers. TLS passthrough to the bridge preserves its direct HTTPS behavior. If adding a proxy later, implement a narrowly trusted proxy configuration, correct secure-cookie/origin handling, legacy TLS compatibility and query/cookie log redaction, then test it explicitly.
+Direct HTTPS in Finstalgia is the documented path for the old iPad. A TLS-terminating reverse proxy is not a turnkey deployment option in v0.3: proxy headers are ignored and CSRF Origin checks assume the browser origin matches the application request host/scheme. Do not solve a mismatch by removing CSRF checks or trusting arbitrary forwarded headers. TLS passthrough to the bridge preserves its direct HTTPS behavior. If adding a proxy later, implement a narrowly trusted proxy configuration, correct secure-cookie/origin handling, legacy TLS compatibility and query/cookie log redaction, then test it explicitly.
 
 ## Validation status
 

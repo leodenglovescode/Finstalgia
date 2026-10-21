@@ -10,6 +10,11 @@ from . import __version__
 
 ID = re.compile(r"^[a-fA-F0-9-]{20,40}$")
 JSON_LIMIT = 2 * 1024 * 1024
+VIDEO_QUALITIES = {
+    "480": {"width": 854, "height": 480, "bitrate": 1400000, "level": 31},
+    "720": {"width": 1280, "height": 720, "bitrate": 2500000, "level": 31},
+    "1080": {"width": 1920, "height": 1080, "bitrate": 5000000, "level": 40},
+}
 
 
 class UpstreamError(Exception):
@@ -169,23 +174,23 @@ def playback_time(ticks):
 
 
 def transcode_settings(source_id, quality, play_session):
-    low = quality == "480"
+    video = VIDEO_QUALITIES.get(quality, VIDEO_QUALITIES["720"])
     return {
         "MediaSourceId": source_id,
         "PlaySessionId": play_session,
         "VideoCodec": "h264",
         "AudioCodec": "aac",
-        "VideoBitRate": 1400000 if low else 2500000,
+        "VideoBitRate": video["bitrate"],
         "AudioBitRate": 128000,
-        "MaxWidth": 854 if low else 1280,
-        "MaxHeight": 480 if low else 720,
+        "MaxWidth": video["width"],
+        "MaxHeight": video["height"],
         "MaxFramerate": 30,
         "TranscodingMaxAudioChannels": 2,
         "MaxVideoBitDepth": 8,
         "h264-profile": "main",
-        "h264-level": 31,
+        "h264-level": video["level"],
         "Profile": "main",
-        "Level": "3.1",
+        "Level": f"{video['level'] // 10}.{video['level'] % 10}",
         "MaxAudioChannels": 2,
         "AudioChannels": 2,
         "SegmentContainer": "ts",
@@ -198,10 +203,10 @@ def transcode_settings(source_id, quality, play_session):
 
 
 def device_profile(quality):
-    low = quality == "480"
+    video = VIDEO_QUALITIES.get(quality, VIDEO_QUALITIES["720"])
     return {
         "Name": "Finstalgia iPad 2",
-        "MaxStreamingBitrate": 1600000 if low else 2700000,
+        "MaxStreamingBitrate": video["bitrate"] + 200000,
         "DirectPlayProfiles": [],
         "TranscodingProfiles": [
             {
@@ -229,11 +234,11 @@ def device_profile(quality):
                         "IsRequired": True,
                     }
                     for prop, val in [
-                        ("Width", "854" if low else "1280"),
-                        ("Height", "480" if low else "720"),
+                        ("Width", str(video["width"])),
+                        ("Height", str(video["height"])),
                         ("VideoFramerate", "30"),
                         ("VideoBitDepth", "8"),
-                        ("VideoLevel", "31"),
+                        ("VideoLevel", str(video["level"])),
                     ]
                 ],
             }

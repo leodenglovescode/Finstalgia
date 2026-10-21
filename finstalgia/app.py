@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import secrets
@@ -16,6 +17,7 @@ from .auth import LoginLimiter, Sessions
 from .config import Config
 from .hls import MAX_PLAYLIST, Grant, UnsafeMedia, rewrite_playlist, safe_url
 from .jellyfin import (
+    VIDEO_QUALITIES,
     Jellyfin,
     UpstreamError,
     checked_id,
@@ -27,6 +29,7 @@ from .jellyfin import (
 PACKAGE = Path(__file__).parent
 COOKIE = "finstalgia_session"
 PLAYABLE = {"Movie", "Episode", "Video", "MusicVideo", "Trailer"}
+LOG = logging.getLogger("uvicorn.error")
 
 
 class SecurityHeaders:
@@ -176,6 +179,8 @@ def create_app(config=None, *, transport=None):
 
     @app.exception_handler(UpstreamError)
     async def upstream_error(request, exc):
+        route = getattr(request.scope.get("route"), "path", "unknown")
+        LOG.warning("Jellyfin request failed: route=%s status=%s", route, exc.status)
         session = getattr(request.state, "session", None)
         if exc.status == 401:
             if session:
@@ -201,6 +206,7 @@ def create_app(config=None, *, transport=None):
 
     @app.exception_handler(UnsafeMedia)
     async def media_error(request, exc):
+        LOG.warning("HLS playlist rejected: unsupported format or unsafe media reference")
         return Response(
             "Unsupported or unsafe HLS format. Use Jellyfin MPEG-TS HLS.",
             status_code=502,
@@ -423,7 +429,7 @@ def create_app(config=None, *, transport=None):
             "GET",
             config.jellyfin_url + f"/Items/{item_id}/Images/Primary",
             session,
-            params={"maxWidth": 240, "quality": 65, "format": "jpg"},
+            params={"maxWidth": 800, "quality": 95, "format": "jpg"},
         ) as source:
             if source.status_code in (401, 403):
                 raise UpstreamError(source.status_code)
@@ -435,7 +441,7 @@ def create_app(config=None, *, transport=None):
                 "image/"
             ):
                 raise UpstreamError()
-            raw = await jf.limited(source, 1024 * 1024)
+            raw = await jf.limited(source, 4 * 1024 * 1024)
         return Response(
             raw,
             media_type=source.headers["content-type"],
@@ -449,7 +455,9 @@ def create_app(config=None, *, transport=None):
         item = await jf.item(session, item_id)
         if item.get("Type") not in PLAYABLE:
             raise HTTPException(400)
-        quality = "480" if fields.get("quality") == "480" else "720"
+        quality = fields.get("quality", "720")
+        if quality not in VIDEO_QUALITIES:
+            quality = "720"
         user_data = item.get("UserData") or {}
         duration_ticks = max(0, int(item.get("RunTimeTicks") or 0))
         resume_ticks = max(0, int(user_data.get("PlaybackPositionTicks") or 0))
@@ -660,6 +668,9 @@ def create_app(config=None, *, transport=None):
                             return
                         yield chunk
                 except (UpstreamError, httpx.HTTPError):
+                    LOG.warning(
+                        "Jellyfin media stream interrupted by an upstream transport failure"
+                    )
                     return  # Headers already sent; end stream. Never leak upstream exceptions.
                 finally:
                     await context.__aexit__(None, None, None)

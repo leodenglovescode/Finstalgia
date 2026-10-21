@@ -4,7 +4,7 @@
 {% set data = item.UserData or {} %}
 <article class="card"><a href="/item/{{ item.Id }}" class="card-link">
   <div class="poster">
-    {% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}" alt="" width="240" height="360">{% else %}<div class="poster-fallback"><span class="fallback-icon" aria-hidden="true">{{ '▤' if item.Type in ['Series', 'Season', 'CollectionFolder'] else '▷' }}</span><span>{{ item.Name }}</span></div>{% endif %}
+    {% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}?v=800-95" alt="" width="240" height="360">{% else %}<div class="poster-fallback"><span class="fallback-icon" aria-hidden="true">{{ '▤' if item.Type in ['Series', 'Season', 'CollectionFolder'] else '▷' }}</span><span>{{ item.Name }}</span></div>{% endif %}
     <span class="poster-type">{{ item.Type }}</span>
     {% if data.Played %}<span class="watched-label" aria-label="Watched">✓</span>{% elif data.PlaybackPositionTicks %}<progress class="watch-progress" value="{{ data.PlaybackPositionTicks }}" max="{{ item.RunTimeTicks or data.PlaybackPositionTicks }}" aria-label="Playback progress"></progress>{% endif %}
   </div>
