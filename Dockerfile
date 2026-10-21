@@ -1,5 +1,12 @@
 FROM python:3.12-slim
 
+ARG VERSION=0.2.0
+ARG REVISION=unknown
+LABEL org.opencontainers.image.source="https://github.com/leodenglovescode/Finstalgia" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$REVISION
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \

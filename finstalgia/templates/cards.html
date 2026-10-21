@@ -1,0 +1,16 @@
+{% macro cards(items) %}
+<div class="poster-grid">
+{% for item in items %}
+{% set data = item.UserData or {} %}
+<article class="card"><a href="/item/{{ item.Id }}" class="card-link">
+  <div class="poster">
+    {% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}" alt="" width="240" height="360">{% else %}<div class="poster-fallback"><span class="fallback-icon" aria-hidden="true">{{ '▤' if item.Type in ['Series', 'Season', 'CollectionFolder'] else '▷' }}</span><span>{{ item.Name }}</span></div>{% endif %}
+    <span class="poster-type">{{ item.Type }}</span>
+    {% if data.Played %}<span class="watched-label" aria-label="Watched">✓</span>{% elif data.PlaybackPositionTicks %}<progress class="watch-progress" value="{{ data.PlaybackPositionTicks }}" max="{{ item.RunTimeTicks or data.PlaybackPositionTicks }}" aria-label="Playback progress"></progress>{% endif %}
+  </div>
+  <h3>{% if item.Type == 'Episode' and item.IndexNumber is defined %}<span class="quiet">E{{ item.IndexNumber }} · </span>{% endif %}{{ item.Name }}</h3>
+  <p class="card-meta">{{ item.ProductionYear or ('Your library' if item.Type == 'CollectionFolder' else item.Type) }}{% if data.PlaybackPositionTicks and not data.Played %} · Resume {{ data.PlaybackPositionTicks|playback_time }}{% elif item.RunTimeTicks %} · {{ (item.RunTimeTicks / 600000000)|int }} min{% endif %}</p>
+</a></article>
+{% endfor %}
+</div>
+{% endmacro %}

@@ -15,7 +15,14 @@ from fastapi.templating import Jinja2Templates
 from .auth import LoginLimiter, Sessions
 from .config import Config
 from .hls import MAX_PLAYLIST, Grant, UnsafeMedia, rewrite_playlist, safe_url
-from .jellyfin import Jellyfin, UpstreamError, checked_id, device_profile, transcode_settings
+from .jellyfin import (
+    Jellyfin,
+    UpstreamError,
+    checked_id,
+    device_profile,
+    playback_time,
+    transcode_settings,
+)
 
 PACKAGE = Path(__file__).parent
 COOKIE = "finstalgia_session"
@@ -39,7 +46,8 @@ class SecurityHeaders:
                             b"content-security-policy",
                             b"default-src 'none'; style-src 'self'; "
                             b"img-src 'self'; media-src 'self'; form-action 'self'; "
-                            b"base-uri 'none'; frame-ancestors 'none'; script-src 'none'",
+                            b"base-uri 'none'; frame-ancestors 'none'; script-src 'self'; "
+                            b"connect-src 'self'",
                         ),
                     ]
                 )
@@ -59,6 +67,7 @@ def create_app(config=None, *, transport=None):
     jf = Jellyfin(config, transport)
     templates = Jinja2Templates(directory=PACKAGE / "templates")
     templates.env.globals["playable"] = PLAYABLE
+    templates.env.filters["playback_time"] = playback_time
 
     @asynccontextmanager
     async def lifespan(app):
@@ -141,7 +150,9 @@ def create_app(config=None, *, transport=None):
 
     @app.exception_handler(HTTPException)
     async def http_error(request, exc):
-        if exc.status_code == 401 and not request.url.path.startswith(("/media/", "/art/")):
+        if exc.status_code == 401 and not request.url.path.startswith(
+            ("/media/", "/art/", "/playback/")
+        ):
             response = RedirectResponse("/login", status_code=303)
             response.delete_cookie(
                 COOKIE, path="/", secure=config.https, httponly=True, samesite="lax"
@@ -294,6 +305,8 @@ def create_app(config=None, *, transport=None):
         total = len(items)
         items = items[page * config.page_size : (page + 1) * config.page_size]
         remember_art(session, items)
+        continue_items = await jf.resume(session) if page == 0 else []
+        remember_art(session, continue_items)
         return render(
             request,
             "browse.html",
@@ -306,6 +319,7 @@ def create_app(config=None, *, transport=None):
             size=config.page_size,
             page_url="/?",
             crumbs=[],
+            continue_items=continue_items,
         )
 
     @app.get("/search")
@@ -436,6 +450,15 @@ def create_app(config=None, *, transport=None):
         if item.get("Type") not in PLAYABLE:
             raise HTTPException(400)
         quality = "480" if fields.get("quality") == "480" else "720"
+        user_data = item.get("UserData") or {}
+        duration_ticks = max(0, int(item.get("RunTimeTicks") or 0))
+        resume_ticks = max(0, int(user_data.get("PlaybackPositionTicks") or 0))
+        if (
+            fields.get("start") == "over"
+            or user_data.get("Played")
+            or (duration_ticks and resume_ticks >= duration_ticks)
+        ):
+            resume_ticks = 0
         info = await jf.api(
             f"/Items/{checked_id(item_id)}/PlaybackInfo",
             session,
@@ -464,10 +487,19 @@ def create_app(config=None, *, transport=None):
         source_id = str(sources[0]["Id"])
         if len(source_id) > 256:
             raise UpstreamError()
-        settings = transcode_settings(
-            source_id, quality, info.get("PlaySessionId") or secrets.token_hex(16)
+        play_session_id = info.get("PlaySessionId") or secrets.token_hex(16)
+        settings = transcode_settings(source_id, quality, play_session_id)
+        # Keep the working zero-based HLS timeline. Native seeking restores the saved time;
+        # applying StartTimeTicks as well would risk counting a transcode offset twice.
+        grant = Grant(
+            item_id,
+            str(item.get("Name", "Video")),
+            quality,
+            source_id=source_id,
+            play_session_id=play_session_id,
+            resume_ticks=resume_ticks,
+            duration_ticks=duration_ticks,
         )
-        grant = Grant(item_id, str(item.get("Name", "Video")), quality)
         if fields.get("ticket") == "yes":
             grant.ticket = secrets.token_urlsafe(32)
             grant.ticket_expires = time.monotonic() + config.ticket_seconds
@@ -477,6 +509,68 @@ def create_app(config=None, *, transport=None):
             session.grants.popitem(last=False)
         session.grants[grant.gid] = grant
         return RedirectResponse("/watch/" + grant.gid, 303)
+
+    @app.post("/played/{item_id}")
+    async def mark_played(request: Request, item_id: str):
+        session = current(request)
+        fields = await form_data(request, session)
+        item = await jf.item(session, item_id)
+        if item.get("Type") not in PLAYABLE or fields.get("played") not in ("yes", "no"):
+            raise HTTPException(400)
+        await jf.mark_played(session, item_id, fields["played"] == "yes")
+        return RedirectResponse("/item/" + item_id, 303)
+
+    @app.post("/playback/{grant_id}")
+    async def playback_report(request: Request, grant_id: str):
+        session = current(request)
+        fields = await form_data(request, session)
+        grant = session.grants.get(grant_id)
+        if not grant:
+            raise HTTPException(404)
+        event = fields.get("event")
+        position = fields.get("position", "")
+        if event not in ("start", "progress", "pause", "stop", "ended") or not re.fullmatch(
+            r"\d{1,16}", position
+        ):
+            raise HTTPException(400)
+        position = int(position)
+        if position > (grant.duration_ticks or 7 * 86400 * 10000000) + 5 * 10000000:
+            raise HTTPException(400)
+        if grant.duration_ticks:
+            position = min(position, grant.duration_ticks)
+        async with grant.report_lock:
+            if grant.reported_stopped and event in ("stop", "ended"):
+                return Response(status_code=204)
+            now = time.monotonic()
+            if event == "progress" and now - grant.last_report_at < 2:
+                return Response(status_code=204)
+            body = {
+                "ItemId": grant.item_id,
+                "MediaSourceId": grant.source_id,
+                "PlaySessionId": grant.play_session_id,
+                "PositionTicks": position,
+                "PlayMethod": "Transcode",
+                "CanSeek": True,
+                "IsPaused": event == "pause",
+            }
+            starting = not grant.reported_started or grant.reported_stopped
+            if starting:
+                await jf.mutate("/Sessions/Playing", session, body=body)
+                grant.reported_started, grant.reported_stopped = True, False
+            if event in ("stop", "ended"):
+                await jf.mutate(
+                    "/Sessions/Playing/Stopped",
+                    session,
+                    body={
+                        key: body[key]
+                        for key in ("ItemId", "MediaSourceId", "PlaySessionId", "PositionTicks")
+                    },
+                )
+                grant.reported_stopped = True
+            elif event != "start" or not starting:
+                await jf.mutate("/Sessions/Playing/Progress", session, body=body)
+            grant.last_position_ticks, grant.last_report_at = position, now
+        return Response(status_code=204)
 
     @app.get("/watch/{grant_id}")
     async def watch(request: Request, grant_id: str):

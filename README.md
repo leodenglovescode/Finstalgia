@@ -4,13 +4,14 @@
 
 <h1 align="center">Finstalgia</h1>
 
-A lightweight Jellyfin web client for older iPads. Browse your library and play video through Jellyfin’s H.264/AAC transcoding—no app, jailbreak, JavaScript, or frontend build required.
+A lightweight Jellyfin web client for older iPads. Browse your library and play video through Jellyfin’s H.264/AAC transcoding—no app, jailbreak, or frontend build required.
 
 - **Modern and Retro modes**, with native video controls.
-- Movies, TV seasons and episodes, search, and 480p/720p profiles.
+- Movies, TV, search, and 480p/720p playback.
+- Resume playback, continue watching, and watched/unwatched marks synced with Jellyfin.
 - Individual Jellyfin accounts, with access tokens kept on the server.
 
-**v0.1 prototype.** Designed for iPad 2 / iOS 9.3.5; actual device playback remains untested.
+**v0.2.** Built for iPad 2 / iOS 9.3.5. Playback confirmed working by the project owner.
 
 ## Screenshots
 
@@ -20,39 +21,40 @@ A lightweight Jellyfin web client for older iPads. Browse your library and play 
 
 *Design previews with fictional media. No video is attached.*
 
-## Quick start
+## Install with Docker
 
-Requires Python 3.10+ and a running Jellyfin server.
-
-```sh
-git clone https://github.com/leodenglovescode/Finstalgia.git
-cd Finstalgia
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install .
-cp .env.example .env
-```
-
-Edit `FINSTALGIA_JELLYFIN_URL` in `.env`, then run:
+Public image: `leodengdev/finstalgia:latest` (AMD64 and ARM64). No Docker login or source build needed.
 
 ```sh
-python -m finstalgia serve
+mkdir finstalgia && cd finstalgia
+curl -fsSLO https://raw.githubusercontent.com/leodenglovescode/Finstalgia/main/compose.yaml
+curl -fsSLo .env https://raw.githubusercontent.com/leodenglovescode/Finstalgia/main/deploy/compose.env.example
 ```
 
-Open **http://127.0.0.1:18095** and sign in with your Jellyfin account. `.env` is loaded automatically and Git-ignored. Existing environment variables and CLI flags override it.
+Edit `.env` with your Jellyfin URL and bridge LAN IP, then:
+
+```sh
+docker compose pull
+docker compose run --rm finstalgia cert-init --ip 192.168.1.20
+docker compose up -d
+```
+
+Replace the example IP with the bridge’s LAN address. Install its public CA on the iPad as described below, then open `https://YOUR_LAN_IP:18443` and sign in. Pin `FINSTALGIA_IMAGE=leodengdev/finstalgia:0.2.0` in `.env` to stay on this release.
+
+Prefer Python? [Local install and systemd setup](docs/DEPLOYMENT.md).
 
 **HTTP sends passwords and sessions unencrypted.** Use HTTPS for regular LAN use; do not expose Finstalgia to the public Internet.
 
 ## HTTPS on your LAN
 
-Replace the example IP with the bridge’s LAN address:
+Export the public certificate and display its fingerprint:
 
 ```sh
-python -m finstalgia cert-init --ip 192.168.1.20
-python -m finstalgia serve --https --host 0.0.0.0 --port 18443
+docker compose cp finstalgia:/config/ca.cer ./finstalgia-ca.cer
+docker compose run --rm finstalgia cert-info
 ```
 
-Verify the root CA fingerprint through a trusted channel before installing its public `.cer` file.
+Transfer `finstalgia-ca.cer` to the iPad and verify its fingerprint before installing it.
 
 - **iOS 9:** install the root certificate/profile, then verify that Safari trusts the exact HTTPS address. It does not have the newer full-trust switch.
 - **iOS 10.3+:** after installation, enable the root under **Settings → General → About → Certificate Trust Settings**.
@@ -67,7 +69,7 @@ The Docker image runs as a non-root user and keeps certificates in a persistent 
 
 ## Status and limitations
 
-Automated tests and local Docker HTTP/HTTPS checks pass. Real Jellyfin transcoding and iPad playback still need validation. Output depends on Jellyfin and ffmpeg; hardware acceleration is configured there. v0.1 has no subtitle/audio selection, watch-progress reporting, offline playback, or DRM support.
+Playback works with Jellyfin transcoding. Progress saves about every 10 seconds and on pause, using a small iOS 9-compatible script; browsing, playback, and manual watched marks work without JavaScript. Hardware acceleration is configured in Jellyfin. Subtitle/audio selection, offline playback, and DRM are not supported.
 
 [Device checklist](docs/DEVICE_CHECKLIST.md) · [Technical reference](docs/REFERENCE.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 

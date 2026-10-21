@@ -229,7 +229,7 @@ def test_missing_images_and_security_headers(client, upstream):
     assert image.status_code == 200
     assert image.headers["content-type"].startswith("image/svg+xml")
     assert image.headers["x-content-type-options"] == "nosniff"
-    assert "script-src 'none'" in image.headers["content-security-policy"]
+    assert "script-src 'self'" in image.headers["content-security-policy"]
     assert image.headers["referrer-policy"] == "no-referrer"
 
 

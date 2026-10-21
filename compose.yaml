@@ -1,7 +1,6 @@
 services:
   finstalgia:
-    build: .
-    image: finstalgia:local
+    image: ${FINSTALGIA_IMAGE:-leodengdev/finstalgia:latest}
     restart: unless-stopped
     init: true
     environment:

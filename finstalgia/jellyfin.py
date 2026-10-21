@@ -113,6 +113,60 @@ class Jellyfin:
     async def views(self, session):
         return await self.user_route(session, "Views", "/UserViews")
 
+    async def mutate(self, path, session, *, method="POST", body=None, params=None):
+        async with self.stream(
+            method, self.config.jellyfin_url + path, session, json=body, params=params
+        ) as response:
+            if response.status_code in (401, 403, 404):
+                raise UpstreamError(response.status_code)
+            if response.status_code not in (200, 204):
+                raise UpstreamError()
+            await self.limited(response, JSON_LIMIT)
+
+    async def resume(self, session):
+        try:
+            result = await self.user_route(
+                session,
+                "Items/Resume",
+                "/UserItems/Resume",
+                {
+                    "Limit": 6,
+                    "MediaTypes": "Video",
+                    "EnableUserData": "true",
+                    "ImageTypeLimit": 1,
+                    "EnableImageTypes": "Primary",
+                },
+            )
+        except UpstreamError as exc:
+            if exc.status == 404:
+                return []
+            raise
+        return result.get("Items", [])[:6]
+
+    async def mark_played(self, session, item_id, played):
+        item_id = checked_id(item_id)
+        method = "POST" if played else "DELETE"
+        try:
+            await self.mutate(
+                f"/Users/{session.user_id}/PlayedItems/{item_id}", session, method=method
+            )
+        except UpstreamError as exc:
+            if exc.status != 404:
+                raise
+            await self.mutate(
+                f"/UserPlayedItems/{item_id}",
+                session,
+                method=method,
+                params={"UserId": session.user_id},
+            )
+
+
+def playback_time(ticks):
+    seconds = max(0, int(ticks or 0)) // 10000000
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours}:{minutes:02}:{seconds:02}" if hours else f"{minutes}:{seconds:02}"
+
 
 def transcode_settings(source_id, quality, play_session):
     low = quality == "480"

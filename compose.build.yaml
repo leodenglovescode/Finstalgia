@@ -1,0 +1,5 @@
+services:
+  finstalgia:
+    image: finstalgia:local
+    pull_policy: never
+    build: .

@@ -1,6 +1,6 @@
 # Deploying Finstalgia
 
-Use one Finstalgia process, pointed at one fixed Jellyfin server. Sessions are in memory; restarts log users out. No GPU or ffmpeg installation is needed on the bridge: transcoding remains in Jellyfin. Docker/systemd do not change iPad certificate requirements or establish device compatibility. Keep access on your private LAN; there is no WAN security audit.
+Use one Finstalgia process, pointed at one fixed Jellyfin server. Sessions are in memory; restarts log users out. No GPU or ffmpeg installation is needed on the bridge: transcoding remains in Jellyfin. Playback is confirmed working by the project owner. Docker/systemd use the same player and certificate setup. Keep access on your private LAN; there is no WAN security audit.
 
 ## Local Python / development
 
@@ -30,15 +30,21 @@ Replace example IPs with your server addresses. Set up LAN DNS for optional DNS 
 
 ## Docker Compose
 
-Requires Docker Engine/Desktop and the Compose plugin. The supplied Dockerfile uses the official Python slim image, a fixed unprivileged UID/GID (10001), no frontend build or ffmpeg, and a single application process. Compose uses a read-only application filesystem, drops capabilities, prevents privilege escalation, and provides a writable named volume only for certificate state plus temporary storage. The image is built locally; no public Finstalgia registry image exists yet.
+Requires Docker Engine/Desktop and the Compose plugin. The supplied Dockerfile uses the official Python slim image, a fixed unprivileged UID/GID (10001), no frontend build or ffmpeg, and a single application process. Compose uses a read-only application filesystem, drops capabilities, prevents privilege escalation, and provides a writable named volume only for certificate state plus temporary storage. Public images are available at `leodengdev/finstalgia` for Linux AMD64 and ARM64. Anonymous pulls need no login. Use `latest` for updates or `0.2.0` to pin the release.
 
-From the project root:
+No source checkout is needed:
 
 ```sh
-cp deploy/compose.env.example .env
-# Edit .env before continuing; don't overwrite an existing configuration.
+mkdir finstalgia && cd finstalgia
+curl -fsSLO https://raw.githubusercontent.com/leodenglovescode/Finstalgia/main/compose.yaml
+curl -fsSLo .env https://raw.githubusercontent.com/leodenglovescode/Finstalgia/main/deploy/compose.env.example
+```
+
+Or, in a source checkout, copy `deploy/compose.env.example` to `.env`. Edit it, then run:
+
+```sh
 docker compose config --quiet
-docker compose build
+docker compose pull
 docker compose run --rm finstalgia cert-init --ip 192.168.1.20 --dns finstalgia.home.arpa
 docker compose run --rm finstalgia cert-info
 docker compose up -d
@@ -89,7 +95,11 @@ Do not add `down --volumes` unless you intend to delete certificate state and ha
 
 ### Updates
 
-Review/pull source changes yourself, then `docker compose build --pull` and `docker compose up -d`. This does not publish an image. The named volume survives recreation; sessions do not. Save the previous local image or source revision for rollback. Dependencies are bounded in `pyproject.toml`; the Docker base tag and dependency resolutions can change at rebuild. Pin a reviewed image digest and dependency snapshot for a strictly reproducible deployment. Image builds work on native supported architectures through the official base image; no multi-architecture release has been published or fully tested.
+Run `docker compose pull` then `docker compose up -d`. Certificates remain in the named volume; login sessions reset. Progress and watched marks remain in Jellyfin. Set `FINSTALGIA_IMAGE=leodengdev/finstalgia:0.2.0` in `.env` to pin a version; use an image digest for a fully fixed deployment. Change it to the previous version and recreate the service to roll back.
+
+To build your own image from a source checkout, use `docker compose -f compose.yaml -f compose.build.yaml up -d --build`. The override selects the local Dockerfile instead of the registry image.
+
+For maintainers: version tags run tests on Python 3.10/3.12 and build AMD64/ARM64 images. Set the repository variable `DOCKERHUB_USERNAME=leodengdev` and a dedicated read/write `DOCKERHUB_TOKEN` Actions secret to enable automatic publication. Without them the workflow checks the build only. A signed-in maintainer can publish manually with `docker buildx build --platform linux/amd64,linux/arm64 -t leodengdev/finstalgia:0.2.0 -t leodengdev/finstalgia:latest --push .`.
 
 ## Linux systemd
 
@@ -122,8 +132,8 @@ The service uses `EnvironmentFile` with `--no-env-file`: the process environment
 
 ## Reverse proxies
 
-Direct HTTPS in Finstalgia is the documented path for the old iPad. A TLS-terminating reverse proxy is not a turnkey deployment option in v0.1: proxy headers are ignored and CSRF Origin checks assume the browser origin matches the application request host/scheme. Do not solve a mismatch by removing CSRF checks or trusting arbitrary forwarded headers. TLS passthrough to the bridge preserves its direct HTTPS behavior. If adding a proxy later, implement a narrowly trusted proxy configuration, correct secure-cookie/origin handling, legacy TLS compatibility and query/cookie log redaction, then test it explicitly.
+Direct HTTPS in Finstalgia is the documented path for the old iPad. A TLS-terminating reverse proxy is not a turnkey deployment option in v0.2: proxy headers are ignored and CSRF Origin checks assume the browser origin matches the application request host/scheme. Do not solve a mismatch by removing CSRF checks or trusting arbitrary forwarded headers. TLS passthrough to the bridge preserves its direct HTTPS behavior. If adding a proxy later, implement a narrowly trusted proxy configuration, correct secure-cookie/origin handling, legacy TLS compatibility and query/cookie log redaction, then test it explicitly.
 
 ## Validation status
 
-On 2026-10-21: configuration parsing, precedence and CLI behavior passed automated tests. The Docker image built locally on Docker Desktop (Linux ARM64, Python 3.12); Compose configuration validation, non-root UID, key permissions, container HTTP/HTTPS, and CA persistence across container recreation passed smoke checks. TLS 1.2 ECDHE-RSA negotiated successfully; system trust rejected the unknown CA and an incorrect SAN. Native Python 3.11 startup from `.env` also passed. A successful container check does not prove networking to your Jellyfin or playback. The systemd unit is a provided template and has not been started on a Linux system by this project. No iPad device testing, real Jellyfin transcoding, registry publication or remote deployment is implied.
+On 2026-10-21: configuration parsing, precedence and CLI behavior passed automated tests. The Docker image built locally on Docker Desktop (Linux ARM64, Python 3.12); Compose configuration validation, non-root UID, key permissions, container HTTP/HTTPS, and CA persistence across container recreation passed smoke checks. TLS 1.2 ECDHE-RSA negotiated successfully; system trust rejected the unknown CA and an incorrect SAN. Native Python 3.11 startup from `.env` also passed. The project owner has confirmed playback works. The systemd unit is a provided template and has not been started on a Linux system by this project. The public container image uses the same playback flow; GitHub Actions records release build and test results.

@@ -6,6 +6,8 @@ from types import SimpleNamespace
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from finstalgia.jellyfin import playback_time
+
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "docs"
 
@@ -16,6 +18,7 @@ def main():
         autoescape=select_autoescape(["html"]),
     )
     environment.globals["playable"] = {"Movie", "Episode", "Video"}
+    environment.filters["playback_time"] = playback_time
     titles = [
         "The Quiet Orbit",
         "Ocean After Hours",
@@ -102,9 +105,10 @@ FINSTALGIA DESIGN PREVIEW</text></svg>'''
             )
             page = page.replace('href="/static/style.css"', 'href="../finstalgia/static/style.css"')
             page = page.replace("/static/logo.svg", "../finstalgia/static/logo.svg")
+            page = page.replace("/static/player.js", "../finstalgia/static/player.js")
             page = page.replace(
-                '<video controls preload="none" src=""',
-                '<video controls preload="none" poster="posters/player.svg"',
+                '<video id="player" controls preload="none" src=""',
+                '<video id="player" controls preload="none" poster="posters/player.svg"',
             )
             for item in items:
                 page = page.replace("/art/" + item["Id"], "posters/" + item["Id"] + ".svg")

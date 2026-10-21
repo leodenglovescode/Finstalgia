@@ -1,6 +1,6 @@
 # Actual-device validation record
 
-No boxes are pre-checked: mocked tests and desktop previews are not real-device evidence.
+Playback is confirmed working by the project owner. Use this checklist when testing new devices or server configurations.
 
 Record date, bridge commit/version, Python/OpenSSL, Jellyfin/ffmpeg version, source codec and device/OS. Do not record real passwords, tokens or personal movie metadata.
 
@@ -36,6 +36,7 @@ Record date, bridge commit/version, Python/OpenSSL, Jellyfin/ffmpeg version, sou
 - [ ] Repeat at 480p and both UI modes. Confirm native controls remain usable in Retro mode.
 - [ ] Verify byte-range requests and 200/206/416 statuses on real upstream media; confirm no off-origin or mixed-content requests.
 - [ ] If NVENC enabled, confirm actual hardware encode/decode in server logs and inspect HDR tone mapping/resource use. If software encoding used, record CPU and playback behavior.
+- [ ] Check resume from a saved position, pause/continue, watched/unwatched marks, and progress in another Jellyfin client.
 - [ ] Record limitations of subtitles (no selection/burn-in UI), codec negotiation, cookies and seeking.
 
 ## Host smoke commands

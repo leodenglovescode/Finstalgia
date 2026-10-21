@@ -1,4 +1,4 @@
-include .env.example .dockerignore Dockerfile compose.yaml
+include .env.example .dockerignore Dockerfile compose.yaml compose.build.yaml
 include README.md LICENSE CONTRIBUTING.md SECURITY.md requirements-dev.lock
 recursive-include deploy *.service *.example
 recursive-include docs *.md *.html *.png *.svg

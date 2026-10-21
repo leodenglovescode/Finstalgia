@@ -43,6 +43,8 @@ class MockJellyfin:
         self.segment = None
         self.network_failure = False
         self.playlist = None
+        self.user_data = {"alice": {}, "bob": {}}
+        self.reports = []
 
     def __call__(self, request):
         self.requests.append(request)
@@ -71,8 +73,23 @@ class MockJellyfin:
         if self.fail:
             return httpx.Response(self.fail, text="upstream-secret-details")
         uid = A if user == "alice" else B
+        if path.startswith("/Sessions/Playing"):
+            report = json.loads(request.content)
+            self.reports.append((user, path, report))
+            state = self.user_data[user]
+            state["PlaybackPositionTicks"] = report["PositionTicks"]
+            if path.endswith("/Stopped") and report["PositionTicks"] >= 54000000000 * 0.9:
+                state.update(Played=True, PlaybackPositionTicks=0)
+            return httpx.Response(204)
         if self.modern_only and path.startswith("/Users/"):
             return httpx.Response(404)
+        if "/PlayedItems/" in path or path.startswith("/UserPlayedItems/"):
+            if path.startswith("/UserPlayedItems/"):
+                assert request.url.params["UserId"] == uid
+            else:
+                assert path.startswith(f"/Users/{uid}/")
+            self.user_data[user].update(Played=request.method == "POST", PlaybackPositionTicks=0)
+            return httpx.Response(200, json=self.user_data[user])
         if path.startswith("/Users/"):
             assert path.startswith(f"/Users/{uid}/")
         if path in ("/Items", "/UserViews", f"/Items/{MOVIE}"):
@@ -86,7 +103,13 @@ class MockJellyfin:
             "ProductionYear": 2001,
             "RunTimeTicks": 54000000000,
             "Genres": ["Drama"],
+            "UserData": self.user_data[user],
         }
+        if path in (f"/Users/{uid}/Items/Resume", "/UserItems/Resume"):
+            if path == "/UserItems/Resume":
+                assert request.url.params["UserId"] == uid
+            resumed = bool(self.user_data[user].get("PlaybackPositionTicks"))
+            return httpx.Response(200, json={"Items": [movie] if resumed else []})
         catalog = {
             LIBRARY: {"Id": LIBRARY, "Name": user + "'s films", "Type": "CollectionFolder"},
             MOVIE: movie,

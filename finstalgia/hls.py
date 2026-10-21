@@ -1,5 +1,6 @@
 """Opaque, per-playback resource maps. No upstream URLs reach the browser."""
 
+import asyncio
 import re
 import secrets
 import time
@@ -23,6 +24,15 @@ class Grant:
     item_id: str
     title: str
     quality: str
+    source_id: str = ""
+    play_session_id: str = ""
+    resume_ticks: int = 0
+    duration_ticks: int = 0
+    last_position_ticks: int = 0
+    last_report_at: float = 0
+    reported_started: bool = False
+    reported_stopped: bool = False
+    report_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     gid: str = field(default_factory=lambda: secrets.token_urlsafe(24))
     ticket: str | None = None
     ticket_expires: float = 0

@@ -3,6 +3,7 @@
 <article class="detail">
   <div class="detail-poster poster">{% if item.ImageTags and item.ImageTags.Primary %}<img src="/art/{{ item.Id }}" width="240" height="360" alt="{{ item.Name }} poster">{% else %}<div class="poster-fallback"><span class="fallback-icon">▷</span><span>{{ item.Name }}</span></div>{% endif %}</div>
   <div class="detail-copy"><p class="eyebrow">{{ item.Type }}{% if item.SeriesName %} / {{ item.SeriesName }}{% endif %}</p>
+    {% set data = item.UserData or {} %}
     <h1>{{ item.Name }}</h1>
     <p class="metadata">{% if item.ProductionYear %}{{ item.ProductionYear }} <span>·</span> {% endif %}{% if item.RunTimeTicks %}{{ (item.RunTimeTicks / 600000000)|int }} min{% endif %}{% if item.OfficialRating %} · {{ item.OfficialRating }}{% endif %}{% if item.Type == 'Episode' %} · S{{ item.ParentIndexNumber or 0 }} E{{ item.IndexNumber or 0 }}{% endif %}</p>
     <p class="overview">{{ (item.Overview or 'No description available.')|truncate(5000) }}</p>
@@ -10,9 +11,13 @@
     <form action="/play/{{ item.Id }}" method="post" class="play-form">
       <input type="hidden" name="csrf" value="{{ session.csrf }}">
       <label for="quality">Playback quality</label><select name="quality" id="quality"><option value="720">720p · Balanced · 2.5 Mbps</option><option value="480">480p · Lighter · 1.4 Mbps</option></select>
-      <button class="button primary" type="submit">▶ &nbsp; Open player</button>
+      {% if data.PlaybackPositionTicks and not data.Played %}<button class="button primary" name="start" value="resume" type="submit">▶ Resume {{ data.PlaybackPositionTicks|playback_time }}</button> <button class="button" name="start" value="over" type="submit">Start over</button>{% else %}<button class="button primary" name="start" value="over" type="submit">▶ Play</button>{% endif %}
       <label class="checkbox"><input type="checkbox" name="ticket" value="yes"> Use a 15-minute media ticket if Safari playback cookies fail</label>
       <p class="small quiet">Jellyfin prepares the stream when you tap Play.</p>
+    </form>
+    <form action="/played/{{ item.Id }}" method="post" class="watched-form">
+      <input type="hidden" name="csrf" value="{{ session.csrf }}">
+      {% if data.Played %}<span class="quiet">✓ Watched</span> <button class="button" name="played" value="no">Mark unwatched</button>{% else %}<button class="button" name="played" value="yes">Mark watched</button>{% endif %}
     </form>
   </div>
 </article>

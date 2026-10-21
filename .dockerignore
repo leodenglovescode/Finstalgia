@@ -8,4 +8,5 @@
 !finstalgia/templates/*.html
 !finstalgia/static/
 !finstalgia/static/*.css
+!finstalgia/static/*.js
 !finstalgia/static/*.svg
